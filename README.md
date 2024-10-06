@@ -6,7 +6,6 @@ A primeira linha de cada conjunto de teste contém três números inteiros:
   - Tempo de simulação (T)
   - Quantidade de tarefas periódicas (TP)
   - Quantidade de tarefas aperiódicas (TA)
-  - 
 Em seguida, são fornecidas as descrições das tarefas. Primeiro, as tarefas periódicas, com seus tempos de computação, períodos e deadlines. Depois, as tarefas aperiódicas, com o tempo de chegada e o tempo de computação. A entrada termina com T=0, TP=0 e TA=0, indicando o fim do conjunto de teste.
 
 ## Saída
