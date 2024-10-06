@@ -75,7 +75,7 @@ void Task::load(int p, char s, int c, int d) {
 // Executa um ciclo de clock
 void Task::run() {
     if (pid != -1) { // se a CPU estiver ocupada
-        if (deadline != -1 && time >= deadline)  // se o processo perdeu o deadline
+        if ((unsigned int)deadline != (unsigned int)-1 && time >= (unsigned int)deadline)  // se o processo perdeu o deadline
             grid.append(1, tolower(symbol)); // insere o simbolo do processo em minusculo
         else // se o processo nao perdeu o deadline
             grid.append(1, symbol); // insere o simbolo do processo
@@ -146,39 +146,46 @@ int main() {
     
     int T, TP, TA; // tempo de simulação, número de tarefas periódicas e número de tarefas aperiódicas
 
-    while(true){
+    std::cout << "\n\nDigite T (1 <= T <= 100000), TP (1 <= TP <= 13), e TA (1 <= TA <= 13): " << std::endl;
+    std::cin >> T >> TP >> TA;
+    std::cout << "Digite a computação, período e deadline das tarefas periódicas (1 <= Ci, Pi, Di <= 100000): " << std::endl;
+    
+    for(int i = 0; i < TP; i++){ // carrega as tarefas periódicas
+        int Ci, Pi, Di;
+        std::cin >> Ci >> Pi >> Di;
+        Task task;
+        task.setComput(Ci);
+        task.setTime(Pi);
+        task.setDeadline(Di);
+        task.load(i, 'T' + ('A' + i), task.getComput(), task.getDeadline());  
+        tasks.push_back(task);
+    }
 
-        std::cout << "Digite T (1 <= T <= 100000), TP (1 <= TP <= 13), e TA (1 <= TA <= 13): " << std::endl;
-        std::cin >> T >> TP >> TA;
-        std::cout << "Digite a computação, período e deadline das tarefas periódicas (1 <= Ci, Pi, Di <= 100000): " << std::endl;
-        
-        for(int i = 0; i < TP; i++){ // carrega as tarefas periódicas
-            int Ci, Pi, Di;
-            std::cin >> Ci >> Pi >> Di;
-            Task task;
-            task.setComput(Ci);
-            task.setTime(Pi);
-            task.setDeadline(Di);
-            task.load(i, 'A' + i, task.getComput(), task.getDeadline());  
-            tasks.push_back(task);
+    std::cout<<"Digite a computação e deadline das tarefas aperiódicas (1 <= Ci, Di <= 100000): " << std::endl;
+
+    // Como as tarefas aperiódicas precisam ser carregadas após as tarefas periódicas, o índice de carregamento é TP + i
+    // e vão até TP + TA - 1
+    for(int i = TP; i < TP + TA; i++){ // carrega as tarefas aperiódicas
+        int Ci, Di;
+        std::cin >> Ci >> Di;
+        Task task;
+        task.setComput(Ci);
+        task.setDeadline(Di);
+        task.load(i, 'T' + ('A' + i), task.getComput(), task.getDeadline());
+        tasks.push_back(task);
+    }
+
+    for (size_t i = 0; i < tasks.size(); ++i) {
+        const auto& task = tasks[i];
+        char taskId = 'A' + i; // Gera o identificador da tarefa (A, B, C, etc.)
+        std::cout << "T" << taskId << ": ";
+        std::cout << "(" << task.getComput() << ",";
+        if (task.getTime() != 0) { // Verifica se a tarefa é periódica
+            std::cout << task.getTime() << ",";
         }
-
-        std::cout<<"Digite a computação e deadline das tarefas aperiódicas (1 <= Ci, Di <= 100000): " << std::endl;
-
-        // Como as tarefas aperiódicas precisam ser carregadas após as tarefas periódicas, o índice de carregamento é TP + i
-        // e vão até TP + TA - 1
-        for(int i = TP; i < TP + TA; i++){ // carrega as tarefas aperiódicas
-            int Ci, Di;
-            std::cin >> Ci >> Di;
-            Task task;
-            task.setComput(Ci);
-            task.setDeadline(Di);
-            task.load(i, 'A' + i, task.getComput(), task.getDeadline());
-            tasks.push_back(task);
-        }
+        std::cout << task.getDeadline() << ")\n" << std::endl;
     }
 
     executeTasks();
-	return 0;
-    
+    return 0;
 }
