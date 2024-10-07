@@ -1,199 +1,209 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 
 #define MAX_T 100000
 #define MAX_TP 13
 #define MAX_TA 13
 
-class Task {
-private:
-    int pid; // identificador do processo
-    char symbol; // simbolo do processo
-    int numPreemp;
-    int numContSwitch;
-    int comput;
-    int deadline;
-    unsigned int time; 
-    std::string grid;
+struct PeriodicTask {
+    unsigned t_comp, t_period, t_deadline, t_deadline_original; // computação, período e deadline
+    unsigned ex, wt; // tempo de execução e de espera
+    char s_symbol; 
 
-public:
-    Task();
-    Task(int comput, int deadline, unsigned int time);
-    ~Task();
+    PeriodicTask(unsigned pc=0, unsigned pp=0, unsigned pd=0) {
+    t_comp = pc; t_period = pp; t_deadline = pd, t_deadline_original = pd;
+    ex = wt = 0;
+    }
 
-    void setComput(int c) { comput = c; }
-    int getComput() const { return comput; }
-
-    void setDeadline(int d) { deadline = d; }
-    int getDeadline() const { return deadline; }
-
-    void setTime(unsigned int t) { time = t; }
-    unsigned int getTime() const { return time; }
-
-    void load(int p, char s, int c, int d);
-    void run();
-    std::string getGrid() const;
-    int getNumPreemp() const;
-    int getNumContSwitch() const;
-    char getSymbol() const { return symbol; }
 };
 
-Task::Task() {
-    grid = "";  
-    numPreemp = numContSwitch = 0;
-    pid = -1;
-    symbol = ' ';
-    comput = 0;
-    time = 0;
-    deadline = -1;
-}
+struct AperiodicTask {
+    unsigned t_arrival, t_comp, t_deadline_original; // tempo de chegada e de computação
+    unsigned ex, wt; // tempo de execução e de espera
+    char s_symbol;
 
-Task::Task(int comput, int deadline, unsigned int time) {
-    this->comput = comput;
-    this->time = time;
-    this->deadline = deadline;
-}
-
-Task::~Task() {}
-
-// Carrega um processo na CPU
-void Task::load(int p, char s, int c, int d) {
-    symbol = s; // simbolo do processo - TA, TB, TC, TD...
-    deadline = d; // deadline do processo
-    if (pid == -1) // se a CPU estiver ociosa
-        pid = p; // carrega o processo
-    else { // se a CPU estiver ocupada
-        if (pid != p) { // se o processo carregado for diferente do processo que estava sendo executado
-            pid = p; // carrega o processo
-            ++numContSwitch; // incrementa o numero de trocas de contexto
-            if (comput > 0) // se o processo que estava sendo executado nao terminou
-                ++numPreemp; // incrementa o numero de preempcoes
-        }
+    AperiodicTask(unsigned pa=0, unsigned pc=0) {
+    t_arrival = pa; t_comp = pc;
+    ex = wt = 0;
     }
-    comput = c; // tempo de computacao do processo
+};
+
+class Cpu {
+private:
+	int pid;
+	int numPreemp;
+	int numContSwitch;
+	std::string grid;
+	int comput;
+	int deadline;
+	unsigned int time;
+public:
+    char symbol;
+	Cpu();
+	~Cpu();
+	void load(int f_pid, char f_symbol, int f_comp, int f_period, int f_deadline); 
+	void run();
+	std::string getGrid();
+	int getNumPreemp();
+	int getNumContSwitch();
+};
+
+Cpu::Cpu() {
+	grid = "";
+	numPreemp = numContSwitch = 0;
+	pid = -1;
+	symbol = ' ';
+	comput = 0;
+	time = 0;
+	deadline = -1;
+}
+Cpu::~Cpu() {}
+
+void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_period, int f_deadline) {
+	symbol = f_symbol; // "nome" da tarefa, tipo TA, TB, TC...
+	deadline = f_deadline; // deadline da tarefa
+	if (pid == -1) // se o processador estiver ocioso
+		pid = f_pid; // carrega a tarefa
+	else {
+		if (pid != f_pid) { // se a tarefa carregada for diferente da que está rodando
+			pid = f_pid; // carrega a nova tarefa
+			++numContSwitch; // incrementa o número de trocas de contexto
+			if (comput > 0) // se a tarefa que estava rodando não terminou
+				++numPreemp; // incrementa o número de preempções
+		}
+	}
+	comput = f_comp; 
 }
 
-// Executa um ciclo de clock
-void Task::run() {
-    if (pid != -1) { // se a CPU estiver ocupada
-        if ((unsigned int)deadline != (unsigned int)-1 && time >= (unsigned int)deadline)  // se o processo perdeu o deadline
-            grid.append(1, tolower(symbol)); // insere o simbolo do processo em minusculo
-        else // se o processo nao perdeu o deadline
-            grid.append(1, symbol); // insere o simbolo do processo
-        ++time; // incrementa o tempo
-        comput--; // decrementa o tempo de computacao do processo
-    }
-    else { // se a CPU estiver ociosa
-        ++time; // incrementa o tempo
-        grid.append(1, '_'); // insere o simbolo de idle
-    }
+void Cpu::run() {
+	if (pid != -1) {
+		if (deadline != -1 && time >= static_cast<unsigned int>(deadline)) // se a tarefa perdeu o deadline
+			grid.append(1, tolower(symbol)); // coloca em minúsculo
+		else // se a tarefa não perdeu o deadline
+			grid.append(1, symbol); // coloca em maiúsculo
+		++time; 
+		comput--; // uma unidade de computação foi feita
+	}
+	else {
+		++time; // se o processador estiver ocioso incrementa o tempo
+		grid.append(1, '_'); // coloca um IDLE
+	}
 }
 
-// Retorna a grade de execucao
-std::string Task::getGrid() const {
-    return grid;
+std::string Cpu::getGrid() {
+	return grid;
 }
 
-// Retorna o numero de preempcoes
-int Task::getNumPreemp() const {
-    return numPreemp;
+int Cpu::getNumPreemp() {
+	return numPreemp;
 }
 
-// Retorna o numero de trocas de contexto
-int Task::getNumContSwitch() const {
-    return numContSwitch;
+int Cpu::getNumContSwitch() {
+	return numContSwitch;
 }
+
 
 int main() {
 
-    std::vector<Task> tasks;
-    
-    int T, TP, TA; // tempo de simulação, número de tarefas periódicas e número de tarefas aperiódicas
+    PeriodicTask tp;
+    AperiodicTask ta;
+    Cpu cpu;
 
-    std::cout << "\n\nDigite T (1 <= T <= 100000), TP (1 <= TP <= 13), e TA (1 <= TA <= 13): " << std::endl;
+    std::cout << "\n\nDigite o tempo de simulação, número de tarefas periódicas e número de tarefas aperiódicas:" << std::endl;
+    size_t T, TP, TA;
     std::cin >> T >> TP >> TA;
-    std::cout << "Digite a computação, período e deadline das tarefas periódicas (1 <= Ci, Pi, Di <= 100000): " << std::endl;
+
+    std::vector<PeriodicTask> periodicTasks;
+    std::vector<AperiodicTask> aperiodicTasks;
+    std::vector<int> v_comput;
     
-    for(int i = 0; i < TP; i++){ // carrega as tarefas periódicas
-        int Ci, Pi, Di;
-        std::cin >> Ci >> Pi >> Di;
-        Task task;
-        task.setComput(Ci);
-        task.setTime(Pi);
-        task.setDeadline(Di);
-        char symbol = 'A' + i; // Gera o símbolo correto (A, B, C, etc.)
-        task.load(i, symbol, task.getComput(), task.getDeadline());  
-        tasks.push_back(task);
+    char aux = 'A';
+
+    std::cout << "Digite a computação, período e deadline das tarefas periódicas:" << std::endl;
+    for(size_t i = 0; i < TP; i++){ // carrega as tarefas periódicas
+        std::cin >> tp.t_comp >> tp.t_period >> tp.t_deadline;
+        tp = PeriodicTask(tp.t_comp, tp.t_period, tp.t_deadline);
+        tp.s_symbol = aux;
+        periodicTasks.push_back(tp);
+        v_comput.push_back(tp.t_period);
+        aux++;
+       //cpu.load(i, tp.s_symbol, tp.t_comp, tp.t_period, tp.t_deadline);
     }
 
-    std::cout << "Digite a computação e deadline das tarefas aperiódicas (1 <= Ci, Di <= 100000): " << std::endl;
+    // Ordena as tarefas periódicas em ordem crescente de período
+    std::sort(periodicTasks.begin(), periodicTasks.end(), [](const PeriodicTask& a, const PeriodicTask& b) {
+        return a.t_period < b.t_period;
+    });
 
-    // Como as tarefas aperiódicas precisam ser carregadas após as tarefas periódicas, o índice de carregamento é TP + i
-    // e vão até TP + TA - 1
-    for(int i = 0; i < TA; i++){ // carrega as tarefas aperiódicas
-        int Ci, Di;
-        std::cin >> Ci >> Di;
-        Task task;
-        task.setComput(Ci);
-        task.setDeadline(Di);
-        char symbol = 'A' + TP + i; // Gera o símbolo correto (A, B, C, etc.) após as tarefas periódicas
-        task.load(TP + i, symbol, task.getComput(), task.getDeadline());
-        tasks.push_back(task);
+    std::cout << "Digite o tempo de chegada e de computação das tarefas aperiódicas:" << std::endl;
+    for(size_t i = 0; i < TA; i++){ // carrega as tarefas aperiódicas
+        std::cin >> ta.t_arrival >> ta.t_comp;
+        ta = AperiodicTask(ta.t_arrival, ta.t_comp);
+        ta.s_symbol = aux;
+        aperiodicTasks.push_back(ta);
+        aux++;
+    }
+    
+    int tempo = 0; 
+    int* vezes_computadas = new int[TP];
+    for(int i = 0; i < TP; i++){
+        vezes_computadas[i] = 0;
     }
 
-    std::cout << "\n";
+    int prev_number = -1;
+    if(!periodicTasks.empty()){ // se houver tarefas periódicas
+        for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
 
-    for (size_t i = 0; i < tasks.size(); ++i) {
-        const auto& task = tasks[i];
-        std::cout << "T" << task.getSymbol() << ": "; 
-        std::cout << "(" << task.getComput() << ",";
-        if (task.getTime() != 0) { // Verifica se a tarefa é periódica
-            std::cout << task.getTime() << ",";
+            if(i != 0) 
+                for(int j = 0; j < i; j++){ // para cada tarefa periódica anterior
+
+                    if(tempo % periodicTasks[j].t_period == 0){
+                        vezes_computadas[j] = 0;
+                        periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
+                    }
+
+                    if((periodicTasks[i].t_period >= periodicTasks[j].t_period)){ // se o período da tarefa atual for menor que o da tarefa anterior   
+                        //cpu.load(j, periodicTasks[j].s_symbol, periodicTasks[j].t_comp, periodicTasks[j].t_period, periodicTasks[j].t_deadline); 
+                        if(vezes_computadas[j] != -1)
+                            i = j;
+                    }
+                }
+
+            if(prev_number != i)
+                cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp, periodicTasks[i].t_period, periodicTasks[i].t_deadline); // carrega a tarefa
+            cpu.run(); // roda o processador
+
+            vezes_computadas[i]++;
+            prev_number = i;
+            tempo++;
+            if(vezes_computadas[i] == periodicTasks[i].t_comp)
+                vezes_computadas[i] = -1;
+            else if (vezes_computadas[i] < periodicTasks[i].t_period && vezes_computadas[i] != -1)
+                i--;
         }
-        std::cout << task.getDeadline() << ")" << std::endl;
     }
-    return 0;
-}
 
+    std::cout << "\n\n";
+    std::cout << "\n\nTarefas: " << std::endl;
 
+    for (size_t i = 0; i < periodicTasks.size(); ++i) {
+        const auto& task = periodicTasks[i];
+        std::cout << task.s_symbol << ":";
+        std::cout << "(" << task.t_comp << ",";
+        std::cout << task.t_period << ",";
+        std::cout << task.t_deadline << ")" << std::endl;
+    }
 
-/*
+    for(size_t i = 0; i < aperiodicTasks.size(); ++i) {
+        const auto& task = aperiodicTasks[i];
+        std::cout << task.s_symbol << ":";
+        std::cout << "(" << task.t_arrival << "," << task.t_comp << ")" << std::endl;
+    }
 
-void executeTasks() {
-    Task Task; 
+    std::cout << "Grid:" << cpu.getGrid() << std::endl;
+    std::cout << "Número de preempções: " << cpu.getNumPreemp() << std::endl;
+    std::cout << "Número de trocas de contexto: " << cpu.getNumContSwitch() << std::endl;
     
-    std::cout << "----- (BS)" << std::endl; 
-    Task.load((0<<5)|0,'A',4,10); // carrega o processo A
-    Task.run(); // executa um ciclo de clock
-    Task.run(); 
-    Task.run();
-    Task.run();
-    Task.load((0<<5)|1,'B',8,20); // carrega o processo B
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.load((1<<5)|0,'A',4,20); // carrega o processo A
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.run();
-    Task.load((0<<5)|1,'B',2,20); // carrega o processo B
-    Task.run();
-    Task.run();
-    Task.load((0<<5)|2,'C',1,-1); // carrega o processo C
-    Task.run();
-    Task.load((0<<5)|3,'D',1,-1); // carrega o processo D
-    Task.run();
-    Task.load(26,'.',100000,-1); // carrega o processo idle
-    Task.run();
-    Task.run();
-    Task.load((2<<5)|0,'A',4,30);  // carrega o processo A
-
-    std::cout << Task.getGrid() << std::endl;
-    std::cout << Task.getNumContSwitch() << " " << Task.getNumPreemp() << std::endl; 
+   return 0;
 }
-
-*/
