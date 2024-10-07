@@ -162,12 +162,8 @@ int main() {
                         vezes_computadas[j] = 0;
                         periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
                     }
-
-                    if((periodicTasks[i].t_period >= periodicTasks[j].t_period)){ // se o período da tarefa atual for menor que o da tarefa anterior   
-                        //cpu.load(j, periodicTasks[j].s_symbol, periodicTasks[j].t_comp, periodicTasks[j].t_period, periodicTasks[j].t_deadline); 
-                        if(vezes_computadas[j] != -1)
-                            i = j;
-                    }
+                if(vezes_computadas[j] != -1)
+                    i = j;
                 }
 
             if(prev_number != i)
