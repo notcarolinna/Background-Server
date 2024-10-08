@@ -61,8 +61,6 @@ Cpu::Cpu() {
 Cpu::~Cpu() {}
 
 void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
-	symbol = f_symbol; // "nome" da tarefa, tipo TA, TB, TC...
-	deadline = f_deadline; // deadline da tarefa
 	if (pid == -1) {// se o processador estiver ocioso
 		pid = f_pid; // carrega a tarefa
         if(f_pid != -1){
@@ -75,10 +73,15 @@ void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
 			++numContSwitch; // incrementa o número de trocas de contexto
 			if (comput > 0) { // se a tarefa que estava rodando não terminou
 				++numPreemp; // incrementa o número de preempções
-                //std::cout << "Preempção na tarefa " << symbol << " no tempo " << time << std::endl;
+                std::cout << "Preempção na tarefa " << symbol << " no tempo " << time << std::endl;
+            }
+            if(f_pid == -1){
+                ++numPreemp; // incrementa o número de preempções a cada ida para o IDLE    
             }
 		}
 	}
+    symbol = f_symbol; // "nome" da tarefa, tipo TA, TB, TC...
+	deadline = f_deadline; // deadline da tarefa
 	comput = f_comp; 
 }
 
@@ -149,39 +152,35 @@ int main() {
         aperiodicTasks.push_back(ta);
         aux++;
     }
-    
 
     int tempo = 0; 
     int prev_number = -1;
     int* tp_vezes_computadas = new int[TP];
-    int* ta_vezes_computadas = new int[TA];
     for(int i = 0; i < TP; i++) tp_vezes_computadas[i] = 0;
-    for(int i = 0; i < TA; i++) ta_vezes_computadas[i] = 0;
     
-    while(tempo < T){ // enquanto o tempo de simulação não acabar
+    while(tempo < T){ 
         bool continuar_procurando = true;
 
         if(!periodicTasks.empty()){ // se houver tarefas periódicas
             for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
                 continuar_procurando = true;
-                    for(int j = 0; j < periodicTasks.size(); j++){ // para cada tarefa periódica anterior
-                        // se o tempo que passou dividido pelo período da tarefa anterior tiver sobra 0, 
-                        // passou-se tempo suficiente para repetir o período
+                    for(int j = 0; j < periodicTasks.size(); j++){ 
                         if((tempo % periodicTasks[j].t_period) == 0 && tempo > 0){
-                            tp_vezes_computadas[j] = 0; // zera o número de vezes computadas
-                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; // atualiza o deadline
+                            tp_vezes_computadas[j] = 0; 
+                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; 
                         }
-                        if(tp_vezes_computadas[j] != -1 && continuar_procurando){ // se a tarefa não terminou
-                            i = j; // executa a tarefa em posicao J
-                            continuar_procurando = false; // para de procurar
+                        if(tp_vezes_computadas[j] != -1 && continuar_procurando){ 
+                            i = j;
+                            continuar_procurando = false; 
                         }
                     }
+                    
                 if(continuar_procurando)
                     break;
 
                 if (prev_number != i)
-                    cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp, periodicTasks[i].t_deadline); // carrega a tarefa
-                cpu.run(); // roda o processador
+                    cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp - tp_vezes_computadas[i], periodicTasks[i].t_deadline); // carrega a tarefa
+                cpu.run(); 
 
                 tp_vezes_computadas[i]++; 
                 prev_number = i; 
@@ -199,27 +198,28 @@ int main() {
         int pTasks = periodicTasks.size();
         if(!aperiodicTasks.empty() && continuar_procurando){ // se houver tarefas aperiódicas
             for(int i = 0; i < aperiodicTasks.size(); i++){ // para cada tarefa aperiódica
-                if(aperiodicTasks[i].t_arrival <= tempo && ta_vezes_computadas[i] != -1){ // se a tarefa chegou no tempo certo e não terminou
-                    std::cout << "tempo de chegada task " << aperiodicTasks[i].s_symbol << ": " << aperiodicTasks[i].t_arrival << std::endl << "tempo atual: " << tempo << std::endl;
+                if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0){
                     continuar_procurando = false; // para de procurar
-                    cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
-                    cpu.run(); // roda o processador
+                    if(prev_number != i+pTasks)
+                        cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
+                    cpu.run(); 
                     tempo++;
-                    ta_vezes_computadas[i]++;
-                    if(ta_vezes_computadas[i] == aperiodicTasks[i].t_comp) // se a tarefa terminou
-                        ta_vezes_computadas[i] = -1; // marca como terminada
+                    aperiodicTasks[i].t_comp -= 1;
+                    prev_number = i+pTasks;
                     break;
                 }
             }
         }
 
         if(continuar_procurando) { // se o tempo de simulação não acabou
-            cpu.load(-1, '.', 0, T); // carrega IDLE
-            cpu.run(); // roda o processador
+            cpu.load(-1, '.', 0, T); 
+            cpu.run(); 
             tempo++;
+            prev_number = -1;
         }
     }
 
+    //cpu.load(0, periodicTasks[0].s_symbol, periodicTasks[0].t_comp, periodicTasks[0].t_deadline); // carrega a primeira tarefa
 
     std::cout << "\n\n";
     std::cout << "\n\nTarefas: " << std::endl;
