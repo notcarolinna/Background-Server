@@ -145,40 +145,50 @@ int main() {
         aux++;
     }
     
-    int tempo = 0; 
+        int tempo = 0; 
     int* vezes_computadas = new int[TP];
     for(int i = 0; i < TP; i++){
         vezes_computadas[i] = 0;
     }
 
-    int prev_number = -1;
+    int prev_number = -1; 
+
     if(!periodicTasks.empty()){ // se houver tarefas periódicas
         for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
-
-            if(i != 0) 
-                for(int j = 0; j < i; j++){ // para cada tarefa periódica anterior
-
-                    if(tempo % periodicTasks[j].t_period == 0){
-                        vezes_computadas[j] = 0;
-                        periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
+            int novo_i = i;
+            bool continuar_procurando = true;
+                for(int j = 0; j < periodicTasks.size(); j++){ // para cada tarefa periódica anterior
+                    // se o tempo que passou dividido pelo período da tarefa anterior tiver sobra 0, 
+                    // passou-se tempo suficiente para repetir o período
+                    if((tempo % periodicTasks[j].t_period) == 0){
+                        vezes_computadas[j] = 0; // zera o número de vezes computadas
+                        periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; // atualiza o deadline
                     }
-                if(vezes_computadas[j] != -1)
-                    i = j;
+                    if(vezes_computadas[j] != -1 && continuar_procurando){ // se a tarefa não terminou
+                        novo_i = j; // a tarefa que vai rodar é a anterior
+                        continuar_procurando = false; // para de procurar
+                    }
                 }
+            
+            i = novo_i; // atualiza o índice da tarefa que vai rodar
 
-            if(prev_number != i)
+            if(prev_number != i) 
                 cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp, periodicTasks[i].t_period, periodicTasks[i].t_deadline); // carrega a tarefa
             cpu.run(); // roda o processador
 
-            vezes_computadas[i]++;
-            prev_number = i;
-            tempo++;
-            if(vezes_computadas[i] == periodicTasks[i].t_comp)
-                vezes_computadas[i] = -1;
-            else if (vezes_computadas[i] < periodicTasks[i].t_period && vezes_computadas[i] != -1)
+            vezes_computadas[i]++; 
+            prev_number = i; 
+            tempo++; 
+            
+            if(vezes_computadas[i] == periodicTasks[i].t_comp) // se a tarefa terminou
+                vezes_computadas[i] = -1;  // marca como terminada
+            else if (vezes_computadas[i] < periodicTasks[i].t_period && vezes_computadas[i] != -1) 
                 i--;
+            if(tempo == T) // se o tempo de simulação acabou
+                break;
         }
     }
+
 
     std::cout << "\n\n";
     std::cout << "\n\nTarefas: " << std::endl;
