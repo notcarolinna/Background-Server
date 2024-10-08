@@ -19,7 +19,7 @@ struct PeriodicTask {
 };
 
 struct AperiodicTask {
-    unsigned t_arrival, t_comp, t_deadline_original; // tempo de chegada e de computação
+    unsigned t_arrival, t_comp; // tempo de chegada e de computação
     unsigned ex, wt; // tempo de execução e de espera
     char s_symbol;
 
@@ -42,7 +42,7 @@ public:
     char symbol;
 	Cpu();
 	~Cpu();
-	void load(int f_pid, char f_symbol, int f_comp, int f_period, int f_deadline); 
+	void load(int f_pid, char f_symbol, int f_comp, int f_deadline); 
 	void run();
 	std::string getGrid();
 	int getNumPreemp();
@@ -60,7 +60,7 @@ Cpu::Cpu() {
 }
 Cpu::~Cpu() {}
 
-void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_period, int f_deadline) {
+void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
 	symbol = f_symbol; // "nome" da tarefa, tipo TA, TB, TC...
 	deadline = f_deadline; // deadline da tarefa
 	if (pid == -1) // se o processador estiver ocioso
@@ -89,7 +89,7 @@ void Cpu::run() {
 	}
 	else {
 		++time; // se o processador estiver ocioso incrementa o tempo
-		grid.append(1, '_'); // coloca um IDLE
+		grid.append(1, '.'); // coloca um IDLE
 	}
 }
 
@@ -146,7 +146,7 @@ int main() {
         aux++;
     }
     
-        int tempo = 0; 
+    int tempo = 0; 
     int* vezes_computadas = new int[TP];
     for(int i = 0; i < TP; i++){
         vezes_computadas[i] = 0;
@@ -154,39 +154,60 @@ int main() {
 
     int prev_number = -1; 
 
-    if(!periodicTasks.empty()){ // se houver tarefas periódicas
-        for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
-            bool continuar_procurando = true;
-                for(int j = 0; j < periodicTasks.size(); j++){ // para cada tarefa periódica anterior
-                    // se o tempo que passou dividido pelo período da tarefa anterior tiver sobra 0, 
-                    // passou-se tempo suficiente para repetir o período
-                    if((tempo % periodicTasks[j].t_period) == 0){
-                        vezes_computadas[j] = 0; // zera o número de vezes computadas
-                        periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; // atualiza o deadline
+   while(tempo < T){ // enquanto o tempo de simulação não acabar
+        if(!periodicTasks.empty()){ // se houver tarefas periódicas
+            for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
+                bool continuar_procurando = true;
+                    for(int j = 0; j < periodicTasks.size(); j++){ // para cada tarefa periódica anterior
+                        // se o tempo que passou dividido pelo período da tarefa anterior tiver sobra 0, 
+                        // passou-se tempo suficiente para repetir o período
+                        if((tempo % periodicTasks[j].t_period) == 0){
+                            vezes_computadas[j] = 0; // zera o número de vezes computadas
+                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; // atualiza o deadline
+                        }
+                        if(vezes_computadas[j] != -1 && continuar_procurando){ // se a tarefa não terminou
+                            i = j; // a tarefa que vai rodar é uma anterior
+                            continuar_procurando = false; // para de procurar
+                        }
                     }
-                    if(vezes_computadas[j] != -1 && continuar_procurando){ // se a tarefa não terminou
-                        i = j; // a tarefa que vai rodar é a anterior
-                        continuar_procurando = false; // para de procurar
-                    }
-                }
-            
-            if(prev_number != i) 
-                cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp, periodicTasks[i].t_period, periodicTasks[i].t_deadline); // carrega a tarefa
-            cpu.run(); // roda o processador
 
-            vezes_computadas[i]++; 
-            prev_number = i; 
-            tempo++; 
-            
-            if(vezes_computadas[i] == periodicTasks[i].t_comp) // se a tarefa terminou
-                vezes_computadas[i] = -1;  // marca como terminada
-            if (vezes_computadas[i] < periodicTasks[i].t_period && vezes_computadas[i] != -1) 
-                i--;
-            if(tempo == T) // se o tempo de simulação acabou
-                break;
+                if (prev_number != i)
+                    cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp, periodicTasks[i].t_deadline); // carrega a tarefa
+               // if(vezes_computadas[i] != 1) // se a tarefa está começando
+                    cpu.run(); // roda o processador
+
+                vezes_computadas[i]++; 
+                prev_number = i; 
+                tempo++; 
+                
+                if(vezes_computadas[i] == periodicTasks[i].t_comp) // se a tarefa terminou
+                    vezes_computadas[i] = -1;  // marca como terminada
+                if (vezes_computadas[i] < periodicTasks[i].t_period && vezes_computadas[i] != -1) 
+                    i--;
+                if(tempo == T) // se o tempo de simulação acabou
+                    break;
+            }
+        }
+
+        int pTasks = periodicTasks.size();
+        if(!aperiodicTasks.empty()){ // se houver tarefas aperiódicas
+            for(int i = 0; i < aperiodicTasks.size(); i++){ // para cada tarefa aperiódica
+                cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
+                for(int j = 0; j < aperiodicTasks[i].t_comp; j++){ // para cada tarefa aperiódica anterior
+                    cpu.run(); // roda o processador
+                    tempo++;
+                    if(tempo == T) // se o tempo de simulação acabou
+                        break;
+                }
+                
+            }
+        }
+
+        if(tempo < T) { // se o tempo de simulação não acabou
+            cpu.load(-1, '.', 0, T); // carrega IDLE
+            cpu.run(); // roda o processador
         }
     }
-
 
     std::cout << "\n\n";
     std::cout << "\n\nTarefas: " << std::endl;
