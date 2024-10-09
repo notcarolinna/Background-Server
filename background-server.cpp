@@ -67,7 +67,7 @@ void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
             ++numContSwitch; // incrementa o número de trocas de contexto
         }
     }
-	else {
+	else { // se o processador estiver ocupado
 		if (pid != f_pid) { // se a tarefa carregada for diferente da que está rodando
 			pid = f_pid; // carrega a nova tarefa
 			++numContSwitch; // incrementa o número de trocas de contexto
@@ -75,7 +75,7 @@ void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
 				++numPreemp; // incrementa o número de preempções
                 std::cout << "Preempção na tarefa " << symbol << " no tempo " << time << std::endl;
             }
-            if(f_pid == -1){
+            if(f_pid == -1){ // se a tarefa carregada for IDLE
                 ++numPreemp; // incrementa o número de preempções a cada ida para o IDLE    
             }
 		}
@@ -157,7 +157,7 @@ int main() {
     int prev_number = -1;
     int* tp_vezes_computadas = new int[TP];
     for(int i = 0; i < TP; i++) tp_vezes_computadas[i] = 0;
-    
+
     while(tempo < T){ 
         bool continuar_procurando = true;
 
@@ -165,10 +165,14 @@ int main() {
             for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
                 continuar_procurando = true;
                     for(int j = 0; j < periodicTasks.size(); j++){ 
-                        if((tempo % periodicTasks[j].t_period) == 0 && tempo > 0){
+                        if((tempo % periodicTasks[j].t_period) == 0 && tempo > 0 && tp_vezes_computadas[j] == -1){
                             tp_vezes_computadas[j] = 0; 
-                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original; 
+                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
                         }
+                        //else if(periodicTasks[j].t_deadline < tempo && tp_vezes_computadas[j] == -1) {
+                        //    tp_vezes_computadas[j] = 0; 
+                        //    periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
+                        //}
                         if(tp_vezes_computadas[j] != -1 && continuar_procurando){ 
                             i = j;
                             continuar_procurando = false; 
