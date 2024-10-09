@@ -7,13 +7,13 @@
 #define MAX_TA 13
 
 struct PeriodicTask {
-    unsigned t_comp, t_computado, t_period, t_prox_period, t_deadline, t_deadline_original; // computação, período e deadline
+    unsigned t_comp, t_falta_comp, t_period, t_prox_period, t_deadline, t_deadline_original; // computação, período e deadline
     unsigned ex, wt; // tempo de execução e de espera
     char s_symbol; 
 
     PeriodicTask(unsigned pc=0, unsigned pp=0, unsigned pd=0) {
-    t_comp = pc; t_period = pp; t_prox_period = pp; t_deadline = pd, t_deadline_original = pd;
-    t_computado = ex = wt = 0;
+    t_comp  = t_falta_comp = pc; t_period = pp; t_prox_period = pp; t_deadline = pd, t_deadline_original = pd;
+    ex = wt = 0;
     }
 };
 
@@ -155,8 +155,6 @@ int main() {
 
     int tempo = 0; 
     int prev_number = -1;
-    int* tp_vezes_computadas = new int[TP];
-    for(int i = 0; i < TP; i++) tp_vezes_computadas[i] = 0;
 
     while(tempo < T){ 
         bool continuar_procurando = true;
@@ -167,14 +165,14 @@ int main() {
                 PeriodicTask task;
                     for(int j = 0; j < periodicTasks.size(); j++){
                         task = periodicTasks[j];
-                        if(task.t_computado == 0) { //acabou de processar
-                            if((tempo == task.t_prox_period)){
-                                task.t_computado += task.t_comp;
+                        if(task.t_falta_comp == 0) { //acabou de processar
+                            if(task.t_prox_period == tempo){
+                                task.t_falta_comp = task.t_comp;
                                 task.t_deadline = tempo + task.t_deadline_original;
                                 task.t_prox_period += task.t_period;
                             }
-                            else if(task.t_deadline < tempo) {
-                                tp_vezes_computadas[j] = 0; 
+                            else if(task.t_prox_period < tempo) {
+                                task.t_falta_comp += task.t_comp;
                                 task.t_deadline = tempo + task.t_deadline_original;
                                 task.t_prox_period = tempo + task.t_period;
                             }
@@ -182,28 +180,26 @@ int main() {
                         else if(continuar_procurando){
                             i = j;
                             continuar_procurando = false;
-                            if(tempo == task.t_prox_period) {
-                                task.t_computado += task.t_comp;
-                                task.t_deadline = tempo + task.t_deadline_original;
-                                task.t_prox_period = tempo + task.t_period;
-                            }
                         }
+                        periodicTasks[j] = task;
                     }
-                    
+                task = periodicTasks[i];
+                if(tempo  == 4) {
+                    std::cout << "task: " << task.s_symbol << " (faltam " << task.t_falta_comp << " computacoes)" << std::endl;
+                }
                 if(continuar_procurando)
                     break;
 
                 if (prev_number != i)
-                    cpu.load(i, periodicTasks[i].s_symbol, periodicTasks[i].t_comp - tp_vezes_computadas[i], periodicTasks[i].t_deadline); // carrega a tarefa
+                    cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
                 cpu.run(); 
 
-                tp_vezes_computadas[i]++; 
+                task.t_falta_comp = task.t_falta_comp - 1;
+                periodicTasks[i] = task;
                 prev_number = i; 
                 tempo++; 
                 
-                if(tp_vezes_computadas[i] == periodicTasks[i].t_comp) // se a tarefa terminou
-                    tp_vezes_computadas[i] = -1;  // marca como terminada
-                else if (tp_vezes_computadas[i] < periodicTasks[i].t_period && tp_vezes_computadas[i] != -1) 
+                if (task.t_falta_comp > 0 && tempo > task.t_prox_period) 
                     i--; // se a tarefa não terminou e não passou o período, roda a mesma tarefa novamente
                 if(tempo == T) // se o tempo de simulação acabou
                     break;
@@ -234,7 +230,10 @@ int main() {
         }
     }
 
-    //cpu.load(0, periodicTasks[0].s_symbol, periodicTasks[0].t_comp, periodicTasks[0].t_deadline); // carrega a primeira tarefa
+    if (cpu.symbol == '.'){
+        PeriodicTask task = periodicTasks[0];
+        cpu.load(0, task.s_symbol, task.t_comp, task.t_deadline);
+    }
 
     std::cout << "\n\n";
     std::cout << "\n\nTarefas: " << std::endl;
