@@ -7,13 +7,13 @@
 #define MAX_TA 13
 
 struct PeriodicTask {
-    unsigned t_comp, t_period, t_deadline, t_deadline_original; // computação, período e deadline
+    unsigned t_comp, t_computado, t_period, t_prox_period, t_deadline, t_deadline_original; // computação, período e deadline
     unsigned ex, wt; // tempo de execução e de espera
     char s_symbol; 
 
     PeriodicTask(unsigned pc=0, unsigned pp=0, unsigned pd=0) {
-    t_comp = pc; t_period = pp; t_deadline = pd, t_deadline_original = pd;
-    ex = wt = 0;
+    t_comp = pc; t_period = pp; t_prox_period = pp; t_deadline = pd, t_deadline_original = pd;
+    t_computado = ex = wt = 0;
     }
 };
 
@@ -164,18 +164,29 @@ int main() {
         if(!periodicTasks.empty()){ // se houver tarefas periódicas
             for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
                 continuar_procurando = true;
-                    for(int j = 0; j < periodicTasks.size(); j++){ 
-                        if((tempo % periodicTasks[j].t_period) == 0 && tempo > 0 && tp_vezes_computadas[j] == -1){
-                            tp_vezes_computadas[j] = 0; 
-                            periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
+                PeriodicTask task;
+                    for(int j = 0; j < periodicTasks.size(); j++){
+                        task = periodicTasks[j];
+                        if(task.t_computado == 0) { //acabou de processar
+                            if((tempo == task.t_prox_period)){
+                                task.t_computado += task.t_comp;
+                                task.t_deadline = tempo + task.t_deadline_original;
+                                task.t_prox_period += task.t_period;
+                            }
+                            else if(task.t_deadline < tempo) {
+                                tp_vezes_computadas[j] = 0; 
+                                task.t_deadline = tempo + task.t_deadline_original;
+                                task.t_prox_period = tempo + task.t_period;
+                            }
                         }
-                        //else if(periodicTasks[j].t_deadline < tempo && tp_vezes_computadas[j] == -1) {
-                        //    tp_vezes_computadas[j] = 0; 
-                        //    periodicTasks[j].t_deadline = tempo + periodicTasks[j].t_deadline_original;
-                        //}
-                        if(tp_vezes_computadas[j] != -1 && continuar_procurando){ 
+                        else if(continuar_procurando){
                             i = j;
-                            continuar_procurando = false; 
+                            continuar_procurando = false;
+                            if(tempo == task.t_prox_period) {
+                                task.t_computado += task.t_comp;
+                                task.t_deadline = tempo + task.t_deadline_original;
+                                task.t_prox_period = tempo + task.t_period;
+                            }
                         }
                     }
                     
