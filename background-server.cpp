@@ -165,18 +165,23 @@ int main() {
                 PeriodicTask task;
                     for(int j = 0; j < periodicTasks.size(); j++){
                         task = periodicTasks[j];
-                        if(task.t_falta_comp == 0) { //acabou de processar
-                            if(task.t_prox_period == tempo){
-                                task.t_falta_comp = task.t_comp;
+                        if(task.t_prox_period == tempo) {
+                            if(task.t_falta_comp == 0) {
+                                task.t_falta_comp += task.t_comp;
                                 task.t_deadline = tempo + task.t_deadline_original;
                                 task.t_prox_period += task.t_period;
                             }
-                            else if(task.t_prox_period < tempo) {
+                            //fazer algo para caso passe da deadline
+                            else if(task.t_falta_comp > 0 && task.t_deadline < tempo) {
                                 task.t_falta_comp += task.t_comp;
-                                task.t_deadline = tempo + task.t_deadline_original;
-                                task.t_prox_period = tempo + task.t_period;
+                                //task.t_deadline = tempo + task.t_deadline_original;
+                                task.t_prox_period += task.t_period;
                             }
                         }
+                        if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
+                            task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
+                        }
+
                         if(continuar_procurando && task.t_falta_comp > 0){
                             i = j;
                             continuar_procurando = false;
