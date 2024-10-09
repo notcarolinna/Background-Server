@@ -177,7 +177,7 @@ int main() {
                                 task.t_prox_period = tempo + task.t_period;
                             }
                         }
-                        else if(continuar_procurando){
+                        if(continuar_procurando && task.t_falta_comp > 0){
                             i = j;
                             continuar_procurando = false;
                         }
@@ -190,7 +190,7 @@ int main() {
                 if(continuar_procurando)
                     break;
 
-                if (prev_number != i)
+                //if (prev_number != i)
                     cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
                 cpu.run(); 
 
