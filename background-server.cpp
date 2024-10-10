@@ -43,20 +43,12 @@ public:
 	~Cpu();
 	void load(int f_pid, char f_symbol, int f_comp, int f_deadline); 
 	void run();
-    void addSwitch();
 	std::string getGrid();
-<<<<<<< HEAD
-    char getLastSymbol();
-	int getNumPreemp();
-	int getNumContSwitch();
-    int getDeadline();
-=======
     void addSwitch();   
 	int getNumPreemp();
 	int getNumContSwitch();
     int getDeadline(); // adicionei este método para retornar o deadline 
     char getLastSymbol(); // adicionei este método para retornar o último símbolo
->>>>>>> 3210958 (Contagem de tempos funcionais)
 };
 
 Cpu::Cpu() {
@@ -194,24 +186,6 @@ int main() {
         bool continuar_procurando = true;
         std::cout << "tempo: " << tempo << std::endl;
 
-<<<<<<< HEAD
-        if(!periodicTasks.empty()){ // se houver tarefas periódicas
-            for(int i = 0; i < periodicTasks.size(); i++) { // para cada tarefa periódica
-                continuar_procurando = true;
-                PeriodicTask task;
-                    for(int j = 0; j < periodicTasks.size(); j++) {
-                        task = periodicTasks[j];
-                        if(task.t_prox_period == tempo) {
-                            if(task.t_falta_comp == 0) {
-                                task.t_falta_comp += task.t_comp;
-                                task.t_deadline = tempo + task.t_deadline_original;
-                                task.t_prox_period += task.t_period;
-                            }
-                            else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) {
-                                task.t_falta_comp += task.t_comp;
-                                task.t_prox_period += task.t_period;
-                            }
-=======
         if(!periodicTasks.empty()) { // se houver tarefas periódicas
             PeriodicTask task;
             int achou = 0;
@@ -222,18 +196,11 @@ int main() {
                             task.t_falta_comp += task.t_comp;
                             task.t_deadline = tempo + task.t_deadline_original;
                             task.t_prox_period += task.t_period;
->>>>>>> 3210958 (Contagem de tempos funcionais)
                         }
                         else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) {
                             task.t_falta_comp += task.t_comp;
                             task.t_prox_period += task.t_period;
                         }
-<<<<<<< HEAD
-                        if(continuar_procurando && task.t_falta_comp > 0) {
-                            i = j;
-                            if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
-                               cpu.getDeadline() != task.t_deadline) {
-=======
                     }
                     if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
                         task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
@@ -244,7 +211,6 @@ int main() {
                             achou = i;
                             if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
                             cpu.getDeadline() != task.t_deadline) {
->>>>>>> 3210958 (Contagem de tempos funcionais)
                                 cpu.addSwitch();
                             }
                             continuar_procurando = false;
@@ -254,15 +220,6 @@ int main() {
                             task.ex++;
                         }
                     }
-<<<<<<< HEAD
-                task = periodicTasks[i];
-                if(continuar_procurando)
-                    break;
-
-                //if (prev_number != i)
-                cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
-                cpu.run(); 
-=======
                     periodicTasks[i] = task;
                 }
             if(!continuar_procurando){
@@ -270,7 +227,6 @@ int main() {
                 cpu.load(achou, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
                 cpu.run();
                 task.ex++;
->>>>>>> 3210958 (Contagem de tempos funcionais)
 
                 task.t_falta_comp = task.t_falta_comp - 1;
                 periodicTasks[achou] = task;
@@ -279,15 +235,6 @@ int main() {
         }
 
         int pTasks = periodicTasks.size();
-<<<<<<< HEAD
-        if(!aperiodicTasks.empty() && continuar_procurando) { // se houver tarefas aperiódicas
-            for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
-                if(tempo == T)
-                    break;
-                if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
-                    continuar_procurando = false; // para de procurar
-                    if(prev_number != i+pTasks)
-=======
         if(!aperiodicTasks.empty()) { // se houver tarefas aperiódicas
             for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
                 if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
@@ -297,7 +244,6 @@ int main() {
                     }
                     else {
                         continuar_procurando = false; // para de procurar
->>>>>>> 3210958 (Contagem de tempos funcionais)
                         cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
                         cpu.run(); 
                         aperiodicTasks[i].ex++;
@@ -313,10 +259,7 @@ int main() {
             cpu.run(); 
             //tempo++;
         }
-<<<<<<< HEAD
-=======
         tempo++;
->>>>>>> 3210958 (Contagem de tempos funcionais)
     }
 
     std::cout << "\n\n";
