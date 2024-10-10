@@ -184,9 +184,8 @@ int main() {
 
     while(tempo < T){ 
         bool continuar_procurando = true;
-        std::cout << "tempo: " << tempo << std::endl;
 
-        if(!periodicTasks.empty()) { // se houver tarefas periódicas
+        if(!periodicTasks.empty()) { 
             PeriodicTask task;
             int achou = 0;
                 for(int i = 0; i < periodicTasks.size(); i++) {
@@ -230,24 +229,22 @@ int main() {
 
                 task.t_falta_comp = task.t_falta_comp - 1;
                 periodicTasks[achou] = task;
-                //tempo++; 
             }
         }
 
         int pTasks = periodicTasks.size();
-        if(!aperiodicTasks.empty()) { // se houver tarefas aperiódicas
-            for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
+        if(!aperiodicTasks.empty()) { 
+            for(int i = 0; i < aperiodicTasks.size(); i++) {
                 if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
                     if(!continuar_procurando) {
                         aperiodicTasks[i].ex++;
                         aperiodicTasks[i].wt++;
                     }
                     else {
-                        continuar_procurando = false; // para de procurar
+                        continuar_procurando = false; 
                         cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
                         cpu.run(); 
                         aperiodicTasks[i].ex++;
-                        //tempo++;
                         aperiodicTasks[i].t_comp -= 1;
                     }
                 }
@@ -257,38 +254,26 @@ int main() {
         if(continuar_procurando && tempo != T) { // se o tempo de simulação não acabou
             cpu.load(-1, '.', 0, T); 
             cpu.run(); 
-            //tempo++;
         }
         tempo++;
     }
 
     std::cout << "\n\n";
-    std::cout << "\n\nTarefas: " << std::endl;
+
+    std::cout << cpu.getGrid() << std::endl;
+    std::cout << cpu.getNumPreemp();
+    std::cout << " " << cpu.getNumContSwitch() << std::endl;
 
     for (size_t i = 0; i < periodicTasks.size(); ++i) {
         const auto& task = periodicTasks[i];
-
-        std::cout << task.s_symbol << ":";
-        std::cout << "(" << task.t_comp << ",";
-        std::cout << task.t_period << ",";
-        std::cout << task.t_deadline << ") -> ";
-        //std::cout << task.t_deadline_original << ") -> ";
-        std::cout << " ex: " << task.ex << " wt: " << task.wt << std::endl;
+        std::cout << task.ex << " " << task.wt << std::endl;
     }
 
     for(size_t i = 0; i < aperiodicTasks.size(); ++i) {
         const auto& task = aperiodicTasks[i];
-        std::cout << task.s_symbol << ":";
-        std::cout << "(" << task.t_arrival << ",";
-        std::cout << task.t_comp << ") -> ";
-        //std::cout << task.t_comp_original << ") -> ";
-        std::cout << " ex: " << task.ex << " wt: " << task.wt << std::endl;
+        std::cout << task.ex << " " << task.wt << std::endl;
 
     }
 
-    std::cout << "Grid:" << cpu.getGrid() << std::endl;
-    std::cout << "Número de preempções: " << cpu.getNumPreemp() << std::endl;
-    std::cout << "Número de trocas de contexto: " << cpu.getNumContSwitch() << std::endl;
-    
    return 0;
 }
