@@ -60,6 +60,7 @@ Cpu::Cpu() {
 }
 Cpu::~Cpu() {}
 
+
 void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
 	if (pid == -1) {// se o processador estiver ocioso
 		pid = f_pid; // carrega a tarefa
@@ -112,46 +113,54 @@ int Cpu::getNumContSwitch() {
 	return numContSwitch;
 }
 
-
-int main() {
-
-    PeriodicTask tp;
-    AperiodicTask ta;
-    Cpu cpu;
-
+void taskInput(size_t& T, size_t& TP, size_t& TA, std::vector<PeriodicTask>& periodicTasks, std::vector<AperiodicTask>& aperiodicTasks) {
     std::cout << "\n\nDigite o tempo de simulação, número de tarefas periódicas e número de tarefas aperiódicas:" << std::endl;
-    size_t T, TP, TA;
     std::cin >> T >> TP >> TA;
 
-    std::vector<PeriodicTask> periodicTasks;
-    std::vector<AperiodicTask> aperiodicTasks;
-    std::vector<int> v_comput;
-    
+    periodicTasks.clear();
+    aperiodicTasks.clear();
+
     char aux = 'A';
+    int TS;
+
+    std::cout << "Digite o tempo de simulação, período e deadline das tarefas servidoras:" << std::endl;
+    std::cin >> TS >> TS >> TS;
 
     std::cout << "Digite a computação, período e deadline das tarefas periódicas:" << std::endl;
-    for(size_t i = 0; i < TP; i++){ // carrega as tarefas periódicas
-        std::cin >> tp.t_comp >> tp.t_period >> tp.t_deadline;
-        tp = PeriodicTask(tp.t_comp, tp.t_period, tp.t_deadline);
-        tp.s_symbol = aux;
+    for(size_t i = 0; i < TP; i++) {
+        unsigned t_comp, t_period, t_deadline;
+        std::cin >> t_comp >> t_period >> t_deadline;
+        PeriodicTask tp(t_comp, t_period, t_deadline);
+        tp.s_symbol = aux++;
         periodicTasks.push_back(tp);
-        v_comput.push_back(tp.t_period);
-        aux++;
     }
 
-    // Ordena as tarefas periódicas em ordem crescente de período
     std::sort(periodicTasks.begin(), periodicTasks.end(), [](const PeriodicTask& a, const PeriodicTask& b) {
         return a.t_period < b.t_period;
     });
 
     std::cout << "Digite o tempo de chegada e de computação das tarefas aperiódicas:" << std::endl;
-    for(size_t i = 0; i < TA; i++){ // carrega as tarefas aperiódicas
-        std::cin >> ta.t_arrival >> ta.t_comp;
-        ta = AperiodicTask(ta.t_arrival, ta.t_comp);
-        ta.s_symbol = aux;
+    for(size_t i = 0; i < TA; i++) {
+        unsigned t_arrival, t_comp;
+        std::cin >> t_arrival >> t_comp;
+        AperiodicTask ta(t_arrival, t_comp);
+        ta.s_symbol = aux++;
         aperiodicTasks.push_back(ta);
-        aux++;
     }
+}
+
+
+
+int main() {
+
+    size_t T, TP, TA;
+    std::vector<PeriodicTask> periodicTasks;
+    std::vector<AperiodicTask> aperiodicTasks;
+    PeriodicTask tp;
+    AperiodicTask ta;
+    Cpu cpu;
+
+    taskInput(T, TP, TA, periodicTasks, aperiodicTasks);
 
     int tempo = 0; 
     int prev_number = -1;
