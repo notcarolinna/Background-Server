@@ -18,12 +18,12 @@ struct PeriodicTask {
 };
 
 struct AperiodicTask {
-    unsigned t_arrival, t_comp; // tempo de chegada e de computação
+    unsigned t_arrival, t_comp, t_comp_original; // tempo de chegada e de computação
     unsigned ex, wt; // tempo de execução e de espera
     char s_symbol;
 
     AperiodicTask(unsigned pa=0, unsigned pc=0) {
-    t_arrival = pa; t_comp = pc;
+    t_arrival = pa; t_comp = t_comp_original = pc;
     ex = wt = 0;
     }
 };
@@ -38,17 +38,25 @@ private:
 	int deadline;
 	unsigned int time;
 public:
-    char symbol;
+    char symbol; // deixei esse atributo público
 	Cpu();
 	~Cpu();
 	void load(int f_pid, char f_symbol, int f_comp, int f_deadline); 
 	void run();
     void addSwitch();
 	std::string getGrid();
+<<<<<<< HEAD
     char getLastSymbol();
 	int getNumPreemp();
 	int getNumContSwitch();
     int getDeadline();
+=======
+    void addSwitch();   
+	int getNumPreemp();
+	int getNumContSwitch();
+    int getDeadline(); // adicionei este método para retornar o deadline 
+    char getLastSymbol(); // adicionei este método para retornar o último símbolo
+>>>>>>> 3210958 (Contagem de tempos funcionais)
 };
 
 Cpu::Cpu() {
@@ -61,24 +69,30 @@ Cpu::Cpu() {
 	time = 0;
 	deadline = -1;
 }
+
 Cpu::~Cpu() {}
 
 
 void Cpu::load(int f_pid, char f_symbol, int f_comp, int f_deadline) {
+
 	if (pid == -1) {// se o processador estiver ocioso
 		pid = f_pid; // carrega a tarefa
+
+        // Verificação adicionada para o caso de ir para o IDLE no caso do processador estar ocioso
         if(f_pid != -1){
-            ++numContSwitch; // incrementa o número de trocas de contexto
+            ++numContSwitch; // incrementa o número de trocas de contexto quando sai do IDLE
         }
     }
+
 	else { // se o processador estiver ocupado
 		if (pid != f_pid) { // se a tarefa carregada for diferente da que está rodando
 			pid = f_pid; // carrega a nova tarefa
 			++numContSwitch; // incrementa o número de trocas de contexto
 			if (comput > 0) { // se a tarefa que estava rodando não terminou
 				++numPreemp; // incrementa o número de preempções
-                std::cout << "Preempção na tarefa " << symbol << " no tempo " << time << std::endl;
             }
+
+            // Verificação adicionada para o caso de ir para o IDLE
             if(f_pid == -1){ // se a tarefa carregada for IDLE
                 ++numPreemp; // incrementa o número de preempções a cada ida para o IDLE    
             }
@@ -138,8 +152,8 @@ void taskInput(size_t& T, size_t& TP, size_t& TA, std::vector<PeriodicTask>& per
     char aux = 'A';
     int TS;
 
-    std::cout << "Digite o tempo de simulação, período e deadline das tarefas servidoras:" << std::endl;
-    std::cin >> TS >> TS >> TS;
+    //std::cout << "Digite o tempo de simulação, período e deadline das tarefas servidoras:" << std::endl;
+    //std::cin >> TS >> TS >> TS;
 
     std::cout << "Digite a computação, período e deadline das tarefas periódicas:" << std::endl;
     for(size_t i = 0; i < TP; i++) {
@@ -164,10 +178,7 @@ void taskInput(size_t& T, size_t& TP, size_t& TA, std::vector<PeriodicTask>& per
     }
 }
 
-
-
 int main() {
-
     size_t T, TP, TA;
     std::vector<PeriodicTask> periodicTasks;
     std::vector<AperiodicTask> aperiodicTasks;
@@ -178,11 +189,12 @@ int main() {
     taskInput(T, TP, TA, periodicTasks, aperiodicTasks);
 
     int tempo = 0; 
-    int prev_number = -1;
 
     while(tempo < T){ 
         bool continuar_procurando = true;
+        std::cout << "tempo: " << tempo << std::endl;
 
+<<<<<<< HEAD
         if(!periodicTasks.empty()){ // se houver tarefas periódicas
             for(int i = 0; i < periodicTasks.size(); i++) { // para cada tarefa periódica
                 continuar_procurando = true;
@@ -199,20 +211,50 @@ int main() {
                                 task.t_falta_comp += task.t_comp;
                                 task.t_prox_period += task.t_period;
                             }
+=======
+        if(!periodicTasks.empty()) { // se houver tarefas periódicas
+            PeriodicTask task;
+            int achou = 0;
+                for(int i = 0; i < periodicTasks.size(); i++) {
+                    task = periodicTasks[i];
+                    if(task.t_prox_period == tempo) {
+                        if(task.t_falta_comp == 0) {
+                            task.t_falta_comp += task.t_comp;
+                            task.t_deadline = tempo + task.t_deadline_original;
+                            task.t_prox_period += task.t_period;
+>>>>>>> 3210958 (Contagem de tempos funcionais)
                         }
-                        if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
-                            task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
+                        else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) {
+                            task.t_falta_comp += task.t_comp;
+                            task.t_prox_period += task.t_period;
                         }
+<<<<<<< HEAD
                         if(continuar_procurando && task.t_falta_comp > 0) {
                             i = j;
                             if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
                                cpu.getDeadline() != task.t_deadline) {
+=======
+                    }
+                    if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
+                        task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
+                    }
+
+                    if(task.t_falta_comp > 0) {
+                        if(continuar_procurando) {
+                            achou = i;
+                            if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
+                            cpu.getDeadline() != task.t_deadline) {
+>>>>>>> 3210958 (Contagem de tempos funcionais)
                                 cpu.addSwitch();
                             }
                             continuar_procurando = false;
                         }
-                        periodicTasks[j] = task;
+                        else {
+                            task.wt++;
+                            task.ex++;
+                        }
                     }
+<<<<<<< HEAD
                 task = periodicTasks[i];
                 if(continuar_procurando)
                     break;
@@ -220,20 +262,24 @@ int main() {
                 //if (prev_number != i)
                 cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
                 cpu.run(); 
+=======
+                    periodicTasks[i] = task;
+                }
+            if(!continuar_procurando){
+                task = periodicTasks[achou];
+                cpu.load(achou, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
+                cpu.run();
+                task.ex++;
+>>>>>>> 3210958 (Contagem de tempos funcionais)
 
                 task.t_falta_comp = task.t_falta_comp - 1;
-                periodicTasks[i] = task;
-                prev_number = i; 
-                tempo++; 
-                
-                if (task.t_falta_comp > 0 && tempo > task.t_prox_period) 
-                    i--; // se a tarefa não terminou e não passou o período, roda a mesma tarefa novamente
-                if(tempo == T) // se o tempo de simulação acabou
-                    break;
+                periodicTasks[achou] = task;
+                //tempo++; 
             }
         }
 
         int pTasks = periodicTasks.size();
+<<<<<<< HEAD
         if(!aperiodicTasks.empty() && continuar_procurando) { // se houver tarefas aperiódicas
             for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
                 if(tempo == T)
@@ -241,12 +287,23 @@ int main() {
                 if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
                     continuar_procurando = false; // para de procurar
                     if(prev_number != i+pTasks)
+=======
+        if(!aperiodicTasks.empty()) { // se houver tarefas aperiódicas
+            for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
+                if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
+                    if(!continuar_procurando) {
+                        aperiodicTasks[i].ex++;
+                        aperiodicTasks[i].wt++;
+                    }
+                    else {
+                        continuar_procurando = false; // para de procurar
+>>>>>>> 3210958 (Contagem de tempos funcionais)
                         cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
-                    cpu.run(); 
-                    tempo++;
-                    aperiodicTasks[i].t_comp -= 1;
-                    prev_number = i+pTasks;
-                    break;
+                        cpu.run(); 
+                        aperiodicTasks[i].ex++;
+                        //tempo++;
+                        aperiodicTasks[i].t_comp -= 1;
+                    }
                 }
             }
         }
@@ -254,9 +311,12 @@ int main() {
         if(continuar_procurando && tempo != T) { // se o tempo de simulação não acabou
             cpu.load(-1, '.', 0, T); 
             cpu.run(); 
-            tempo++;
-            prev_number = -1;
+            //tempo++;
         }
+<<<<<<< HEAD
+=======
+        tempo++;
+>>>>>>> 3210958 (Contagem de tempos funcionais)
     }
 
     std::cout << "\n\n";
@@ -264,16 +324,23 @@ int main() {
 
     for (size_t i = 0; i < periodicTasks.size(); ++i) {
         const auto& task = periodicTasks[i];
+
         std::cout << task.s_symbol << ":";
         std::cout << "(" << task.t_comp << ",";
         std::cout << task.t_period << ",";
-        std::cout << task.t_deadline << ")" << std::endl;
+        std::cout << task.t_deadline << ") -> ";
+        //std::cout << task.t_deadline_original << ") -> ";
+        std::cout << " ex: " << task.ex << " wt: " << task.wt << std::endl;
     }
 
     for(size_t i = 0; i < aperiodicTasks.size(); ++i) {
         const auto& task = aperiodicTasks[i];
         std::cout << task.s_symbol << ":";
-        std::cout << "(" << task.t_arrival << "," << task.t_comp << ")" << std::endl;
+        std::cout << "(" << task.t_arrival << ",";
+        std::cout << task.t_comp << ") -> ";
+        //std::cout << task.t_comp_original << ") -> ";
+        std::cout << " ex: " << task.ex << " wt: " << task.wt << std::endl;
+
     }
 
     std::cout << "Grid:" << cpu.getGrid() << std::endl;
