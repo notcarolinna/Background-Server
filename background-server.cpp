@@ -43,15 +43,18 @@ public:
 	~Cpu();
 	void load(int f_pid, char f_symbol, int f_comp, int f_deadline); 
 	void run();
+    void addSwitch();
 	std::string getGrid();
+    char getLastSymbol();
 	int getNumPreemp();
 	int getNumContSwitch();
+    int getDeadline();
 };
 
 Cpu::Cpu() {
 	grid = "";
 	numPreemp = 0;
-    numContSwitch = -1;
+    numContSwitch = 0;
 	pid = -1;
 	symbol = ' ';
 	comput = 0;
@@ -101,8 +104,16 @@ void Cpu::run() {
 	}
 }
 
+void Cpu::addSwitch() {
+    ++numContSwitch;
+}
+
 std::string Cpu::getGrid() {
 	return grid;
+}
+
+char Cpu::getLastSymbol() {
+    return grid[grid.size()-1];
 }
 
 int Cpu::getNumPreemp() {
@@ -111,6 +122,10 @@ int Cpu::getNumPreemp() {
 
 int Cpu::getNumContSwitch() {
 	return numContSwitch;
+}
+
+int Cpu::getDeadline() {
+    return deadline;
 }
 
 void taskInput(size_t& T, size_t& TP, size_t& TA, std::vector<PeriodicTask>& periodicTasks, std::vector<AperiodicTask>& aperiodicTasks) {
@@ -169,10 +184,10 @@ int main() {
         bool continuar_procurando = true;
 
         if(!periodicTasks.empty()){ // se houver tarefas periódicas
-            for(int i = 0; i < periodicTasks.size(); i++){ // para cada tarefa periódica
+            for(int i = 0; i < periodicTasks.size(); i++) { // para cada tarefa periódica
                 continuar_procurando = true;
                 PeriodicTask task;
-                    for(int j = 0; j < periodicTasks.size(); j++){
+                    for(int j = 0; j < periodicTasks.size(); j++) {
                         task = periodicTasks[j];
                         if(task.t_prox_period == tempo) {
                             if(task.t_falta_comp == 0) {
@@ -180,32 +195,30 @@ int main() {
                                 task.t_deadline = tempo + task.t_deadline_original;
                                 task.t_prox_period += task.t_period;
                             }
-                            //fazer algo para caso passe da deadline
-                            else if(task.t_falta_comp > 0 && task.t_deadline < tempo) {
+                            else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) {
                                 task.t_falta_comp += task.t_comp;
-                                //task.t_deadline = tempo + task.t_deadline_original;
                                 task.t_prox_period += task.t_period;
                             }
                         }
                         if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
                             task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
                         }
-
-                        if(continuar_procurando && task.t_falta_comp > 0){
+                        if(continuar_procurando && task.t_falta_comp > 0) {
                             i = j;
+                            if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
+                               cpu.getDeadline() != task.t_deadline) {
+                                cpu.addSwitch();
+                            }
                             continuar_procurando = false;
                         }
                         periodicTasks[j] = task;
                     }
                 task = periodicTasks[i];
-                if(tempo  == 4) {
-                    std::cout << "task: " << task.s_symbol << " (faltam " << task.t_falta_comp << " computacoes)" << std::endl;
-                }
                 if(continuar_procurando)
                     break;
 
                 //if (prev_number != i)
-                    cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
+                cpu.load(i, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
                 cpu.run(); 
 
                 task.t_falta_comp = task.t_falta_comp - 1;
@@ -221,9 +234,11 @@ int main() {
         }
 
         int pTasks = periodicTasks.size();
-        if(!aperiodicTasks.empty() && continuar_procurando){ // se houver tarefas aperiódicas
-            for(int i = 0; i < aperiodicTasks.size(); i++){ // para cada tarefa aperiódica
-                if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0){
+        if(!aperiodicTasks.empty() && continuar_procurando) { // se houver tarefas aperiódicas
+            for(int i = 0; i < aperiodicTasks.size(); i++) { // para cada tarefa aperiódica
+                if(tempo == T)
+                    break;
+                if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) {
                     continuar_procurando = false; // para de procurar
                     if(prev_number != i+pTasks)
                         cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
@@ -236,17 +251,12 @@ int main() {
             }
         }
 
-        if(continuar_procurando) { // se o tempo de simulação não acabou
+        if(continuar_procurando && tempo != T) { // se o tempo de simulação não acabou
             cpu.load(-1, '.', 0, T); 
             cpu.run(); 
             tempo++;
             prev_number = -1;
         }
-    }
-
-    if (cpu.symbol == '.'){
-        PeriodicTask task = periodicTasks[0];
-        cpu.load(0, task.s_symbol, task.t_comp, task.t_deadline);
     }
 
     std::cout << "\n\n";
