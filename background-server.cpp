@@ -6,8 +6,8 @@
 #define MAX_TPA 13
 
 struct PeriodicTask {
-    unsigned int t_comp, t_falta_comp, t_period, t_prox_period, t_deadline, t_deadline_original; // computacao, periodo e deadline
-    unsigned int ex, wt; // tempo de execucao e de espera
+    unsigned int t_comp, t_falta_comp, t_period, t_prox_period, t_deadline, t_deadline_original; 
+    unsigned int ex, wt; 
     char s_symbol; 
 
     PeriodicTask(unsigned pc=0, unsigned pp=0, unsigned pd=0) {
@@ -17,8 +17,8 @@ struct PeriodicTask {
 };
 
 struct AperiodicTask {
-    unsigned int t_arrival, t_comp, t_comp_original; // tempo de chegada e de computacao
-    unsigned int ex, wt; // tempo de execucao e de espera
+    unsigned int t_arrival, t_comp, t_comp_original; 
+    unsigned int ex, wt;
     char s_symbol;
 
     AperiodicTask(unsigned pa=0, unsigned pc=0) {
@@ -37,7 +37,7 @@ private:
     int deadline;
     unsigned int time;
 public:
-    char symbol; // deixei esse atributo publico
+    char symbol;
     Cpu();
     ~Cpu();
     void load(int f_pid, char f_symbol, int f_comp, unsigned int f_deadline); 
@@ -46,8 +46,8 @@ public:
     void addSwitch();   
     int getNumPreemp();
     int getNumContSwitch();
-    unsigned int getDeadline(); // adicionei este metodo para retornar o deadline 
-    char getLastSymbol(); // adicionei este metodo para retornar o ultimo simbolo
+    unsigned int getDeadline();
+    char getLastSymbol();
 };
 
 Cpu::Cpu() {
@@ -63,49 +63,46 @@ Cpu::Cpu() {
 
 Cpu::~Cpu() {}
 
-
 void Cpu::load(int f_pid, char f_symbol, int f_comp, unsigned int f_deadline) {
 
-    if (pid == -1) {// se o processador estiver ocioso
-        pid = f_pid; // carrega a tarefa
+    if (pid == -1) {
+        pid = f_pid; 
 
-        // Verificacao adicionada para o caso de ir para o IDLE no caso do processador estar ocioso
         if(f_pid != -1){
-            ++numContSwitch; // incrementa o numero de trocas de contexto quando sai do IDLE
+            ++numContSwitch;
         }
     }
 
-    else { // se o processador estiver ocupado
-        if (pid != f_pid) { // se a tarefa carregada for diferente da que esta rodando
-            pid = f_pid; // carrega a nova tarefa
-            ++numContSwitch; // incrementa o numero de trocas de contexto
-            if (comput > 0) { // se a tarefa que estava rodando nao terminou
-                ++numPreemp; // incrementa o numero de preempcoes
+    else {
+        if (pid != f_pid) { 
+            pid = f_pid;
+            ++numContSwitch; 
+            if (comput > 0) { 
+                ++numPreemp; 
             }
 
-            // Verificacao adicionada para o caso de ir para o IDLE
-            if(f_pid == -1){ // se a tarefa carregada for IDLE
-                ++numPreemp; // incrementa o numero de preempcoes a cada ida para o IDLE    
+            if(f_pid == -1){
+                ++numPreemp;    
             }
         }
     }
-    symbol = f_symbol; // "nome" da tarefa, tipo TA, TB, TC...
-    deadline = f_deadline; // deadline da tarefa
+    symbol = f_symbol; 
+    deadline = f_deadline;
     comput = f_comp; 
 }
 
 void Cpu::run() {
     if (pid != -1) {
-        if (deadline != -1 && time >= static_cast<unsigned int>(deadline)) // se a tarefa perdeu o deadline
-            grid.append(1, tolower(symbol)); // coloca em minusculo
-        else // se a tarefa nao perdeu o deadline
-            grid.append(1, symbol); // coloca em maiusculo
+        if (deadline != -1 && time >= static_cast<unsigned int>(deadline))
+            grid.append(1, tolower(symbol));
+        else 
+            grid.append(1, symbol); 
         ++time; 
-        comput--; // uma unidade de computacao foi feita
+        comput--; 
     }
     else {
-        ++time; // se o processador estiver ocioso incrementa o tempo
-        grid.append(1, '.'); // coloca um IDLE
+        ++time;
+        grid.append(1, '.');
     }
 }
 
@@ -186,10 +183,6 @@ int main() {
     std::vector<PeriodicTask> periodicTasks;
     std::vector<AperiodicTask> aperiodicTasks;
 
-    // um vetor de pares onde:
-    // o primeiro elemento e o tempo de simulacao,
-    // o segundo eh um par de vetores de tarefas periodicas e aperiodicas
-    // que executam nesse tempo de simulacao
     std::vector<std::pair<int,std::pair<std::vector<PeriodicTask>, std::vector<AperiodicTask>>>> inputs;
 
     std::cout << "ENTRADAS" << std::endl;
@@ -209,63 +202,61 @@ int main() {
             if(!periodicTasks.empty()) { 
                 PeriodicTask task;
                 int achou = 0;
-                    for(size_t i = 0; i < periodicTasks.size(); i++) { // passa por todas periodicTasks
+                    for(size_t i = 0; i < periodicTasks.size(); i++) { 
                         task = periodicTasks[i];
-                        if(task.t_prox_period == tempo) { // se o inicio do proximo periodo for o tempo atual
-                            if(task.t_falta_comp == 0) { // se a tarefa terminou
-                                task.t_falta_comp += task.t_comp; // reinicia a tarefa (adiciona a computacao)
-                                task.t_deadline = tempo + task.t_deadline_original; // atualiza o deadline
-                                task.t_prox_period += task.t_period; // atualiza o inicio do proximo periodo
+                        if(task.t_prox_period == tempo) { 
+                            if(task.t_falta_comp == 0) { 
+                                task.t_falta_comp += task.t_comp; 
+                                task.t_deadline = tempo + task.t_deadline_original; 
+                                task.t_prox_period += task.t_period; 
                             }
-                            else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) { // se a tarefa nao terminou e perdeu o deadline
+                            else if(task.t_falta_comp > 0 && task.t_deadline <= tempo) {
                                 task.t_falta_comp += task.t_comp;
                                 task.t_prox_period += task.t_period; 
                             }
                         }
-                        // se precisa computar tudo ainda e esta com a deadline anterior
-                        // (o que sobrou para fazer do periodo anterior foi feito no tempo atual)
+
                         if (task.t_falta_comp == task.t_comp && task.t_deadline != task.t_prox_period - task.t_period + task.t_deadline_original) {
                             task.t_deadline = task.t_prox_period - task.t_period + task.t_deadline_original;
                         }
 
-                        if(task.t_falta_comp > 0) { // se a tarefa ainda nao terminou
-                            if(continuar_procurando) { // se ainda nao encontrou nenhuma tarefa para executar
+                        if(task.t_falta_comp > 0) { 
+                            if(continuar_procurando) { 
                                 achou = i;
 
-                                //verifica se a tarefa executada anteriormente e a mesma, mas que perdeu o deadline
                                 if(cpu.getLastSymbol() == tolower(task.s_symbol) &&
                                 cpu.getDeadline() != task.t_deadline) {
-                                    cpu.addSwitch(); // incrementa o numero de trocas de contexto (trocou a deadline e o periodo)
+                                    cpu.addSwitch(); 
                                 }
-                                continuar_procurando = false; // para de procurar
+                                continuar_procurando = false; 
                             }
                             else {
                                 task.wt++;
                                 task.ex++;
                             }
                         }
-                        periodicTasks[i] = task; // salva a tarefa
+                        periodicTasks[i] = task;
                     }
-                if(!continuar_procurando){ // se encontrou uma tarefa para executar
+                if(!continuar_procurando){ 
                     task = periodicTasks[achou];
-                    cpu.load(achou, task.s_symbol, task.t_falta_comp, task.t_deadline); // carrega a tarefa
+                    cpu.load(achou, task.s_symbol, task.t_falta_comp, task.t_deadline);
                     cpu.run();
                     task.ex++;
 
-                    task.t_falta_comp = task.t_falta_comp - 1; // diminui a computacao necessaria para completar a tarefa
+                    task.t_falta_comp = task.t_falta_comp - 1; 
                     periodicTasks[achou] = task;
                 }
             }
 
             size_t pTasks = periodicTasks.size();
             if(!aperiodicTasks.empty()) { 
-                for(size_t i = 0; i < aperiodicTasks.size(); i++) { // passa por todas aperiodicTasks
-                    if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) { // se a tarefa chegou e nao foi acabada
-                        if(!continuar_procurando) { // se ja encontrou uma tarefa para executar, ignora essa e segue
+                for(size_t i = 0; i < aperiodicTasks.size(); i++) {
+                    if(aperiodicTasks[i].t_arrival <= tempo && aperiodicTasks[i].t_comp != 0) { 
+                        if(!continuar_procurando) { 
                             aperiodicTasks[i].ex++;
                             aperiodicTasks[i].wt++;
                         }
-                        else { // se ainda nao encontrou nenhuma tarefa para executar, pega essa e executa
+                        else { 
                             continuar_procurando = false; // para de procurar
                             cpu.load(i+pTasks, aperiodicTasks[i].s_symbol, aperiodicTasks[i].t_comp, T);
                             cpu.run(); 
@@ -276,16 +267,14 @@ int main() {
                 }
             }
 
-            // caso nao tenha encontrado nenhuma tarefa para executar, fica em idle
-            if(continuar_procurando && tempo != T) { // se o tempo de simulacao nao acabou
+            if(continuar_procurando && tempo != T) {
                 cpu.load(-1, '.', 0, T); 
                 cpu.run(); 
             }
             tempo++;
         }
-        // Imprime as saidas do programa atual
+        
         std::cout << "\n\n";
-
         std::cout << cpu.getGrid() << std::endl;
         std::cout << cpu.getNumPreemp();
         std::cout << " " << cpu.getNumContSwitch() << std::endl;
